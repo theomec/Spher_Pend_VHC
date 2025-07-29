@@ -1,0 +1,54 @@
+function [ g_y_fcn, g_dy_fcn, g_v_fcn ] = g_fcn(params)
+
+    syms a b_1 d c g R k real positive
+    syms b_0 real
+    syms s ds dds p dp ddp y dy ddy u v real
+    
+    params.a   = a;
+    params.b_0 = b_0;
+    params.b_1 = b_1;
+    params.d   = d;
+    params.c   = c;
+    params.g   = g;
+    params.R   = R;
+    
+    params.servo_0 = 0;
+    params.servo_1 = 0;
+    params.servo_2 = 0;
+    params.servo_3 = k;
+    params.servo_4 = 0;
+    params.servo_5 = 0;
+    params.servo_6 = 0;
+    
+    params.p = p;
+    params.dp = dp;
+    params.ddp = ddp;
+    
+    
+    [ Q, dQ, ddQ ] = s_servo(s, params)
+    
+    [ alpha, beta, gamma ] = s_plot_abg(s, params)
+
+    
+    q  = [ s; y + p ]
+    dq = [ ds; dy + dp * ds ]
+    ddq = [dds; ddy + dp * dds + ddp * ds^2]
+    
+    [ M, C, G, B, B_perp ] = s_dynamics(q, dq, params)
+    
+    N = simplify(- B_perp * ( M * ddq + C * dq + G))
+    
+    
+    g_y  = simplify(subs(diff(N, y),  [ y dy ddy ], [ 0 0 0]))
+    
+    g_dy = simplify(subs(diff(N, dy), [ y dy ddy ], [ 0 0 0]))
+    
+    g_v  = simplify(subs(diff(N, ddy),[ y dy ddy ], [ 0 0 0]))
+
+    g_y_fcn  = matlabFunction(g_y)
+    g_dy_fcn = matlabFunction(g_dy)
+    g_v_fcn  = matlabFunction(g_v)
+
+
+
+end

@@ -1,0 +1,33 @@
+function z = controlled_system(tt0, y, t, t0, X, X_ref, pu, KKK, dKKK, A1, A2, A3, B, T_per, X_c, dt, h, X_star_0, U_fcn, I_1_fcn, I_2_fcn, params)
+
+    ddq = zeros(11, 1);
+
+    q = reshape(y(1:2), 2, 1);
+    dq = reshape(y(3:4), 2, 1);
+
+    [ MM, CC, GG ] = dynamics(q, dq, params);
+
+    X_0 = [ q; dq ];
+    
+    [ tau, X_star, min_dist ] = proj_fcn_trtr(t, t0, [ X_0(2); X_0(4) ], X(2:2:end,:), X_ref, X_c, dt, h, T_per);
+
+    xi = calc_tran_coord_tr(X_0, X_star_0, X_star, I_1_fcn, I_2_fcn, params);
+
+    u_transv = calc_k(tau, KKK) * xi;
+    
+    u_fb = U_fcn(, u_transv, 0);
+
+    u_nom = ppval(pu, tau);
+    u = u_nom + u_fb;
+
+    ddq(1:2) = dq;
+    ddq(3:4) = MM \ (- CC * dq - GG + [ u; 0 ]);
+
+    ddq(5) = tau;
+    ddq(6) = u_fb;
+    ddq(7) = u_nom;
+    ddq(8) = dot(calc_k(tau, KKK), xi);
+    ddq(9:11) = xi;
+    
+    z = ddq;
+end
